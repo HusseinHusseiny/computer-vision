@@ -21,13 +21,16 @@
 using namespace cv;
 using namespace std;
 
-
+//Range of skin color in rgb model
 bool R1(int R, int G, int B) {
 	bool e1 = (R > 95) && (G > 40) && (B > 20) && ((max(R, max(G, B)) - min(R, min(G, B))) > 15) && (abs(R - G) > 15) && (R > G) && (R > B);
 	//bool e2 = (R > 220) && (G > 210) && (B > 170) && (abs(R - G) <= 15) && (R > B) && (G > B);
 	return (e1);
 }
-Mat GetSkin(Mat const& src) {
+//to get the skin parts 
+//function to detect skin parts and color the skin with white, otherwhise in black using rgb ranges defined before
+Mat GetSkin(Mat const& src) 
+{
 	// allocate the result matrix
 	Mat dst = src.clone();
 
@@ -102,7 +105,7 @@ int main() {
 	cout << "Choose which model you want " << endl << endl;
 	cout << " '1' For HSV " << endl;
 	cout << " '2' For YCRCB " << endl;
-	cout << " '3' For RGB " << endl << endl;
+	//cout << " '3' For RGB " << endl << endl;
 
 	cin >> model;
 	cout << "would you like to apply correction to the model" << endl;
@@ -138,16 +141,17 @@ int main() {
 	//int delay = 15;
 
 
-	while (true) {
-
-		cap >> image;
-		flip(image, flipFrame, 1);
+	while (true) 
+	{
+		
+		cap >> image;   //open cam
+		flip(image, flipFrame, 1);//switch directions
 
 		cv::Mat new_image = cv::Mat::zeros(flipFrame.size(), flipFrame.type());
 		double alpha = 2.2; /*< Simple contrast control */
 		int beta = 0;       /*< Simple brightness control */
 
-		for (int y = 0; y < flipFrame.rows; y++) {
+		for (int y = 0; y < flipFrame.rows; y++) {  //color correction
 			for (int x = 0; x < flipFrame.cols; x++) {
 				for (int c = 0; c < flipFrame.channels(); c++) {
 					new_image.at<cv::Vec3b>(y, x)[c] =
@@ -700,7 +704,7 @@ int main() {
 
 
 
-					//Move to Right anf Left
+					//Move to Right and Left
 					if ((pbb - pb > 10) && (abs(ag - agg) < 200))
 					{
 						putText(dss, "Gesture: Move To Right", Point(400, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, 8, false);
@@ -715,7 +719,7 @@ int main() {
 					pb = pbb;
 
 
-					////Rotate to Right anf Left
+					////Rotate to Right and Left
 					if ((agg - ag > 5) && (abs(pb - pbb) < 100))
 					{
 
@@ -2565,6 +2569,7 @@ int main() {
 	return 0;
 
 }
+//function that finds the defects points 
 void findConvexityDefects(vector<Point>& contour, vector<int>& hull, vector<Point>& convexDefects) {
 	if (hull.size() > 0 && contour.size() > 0) {
 		CvSeq* contourPoints;
@@ -2606,6 +2611,7 @@ void findConvexityDefects(vector<Point>& contour, vector<int>& hull, vector<Poin
 		cvReleaseMemStorage(&storage);
 	}
 }
+//eliminate close defect points 
 vector<int> elimNeighborHulls(vector<int> inputIndex, vector<Point> inputPoints) {
 	vector<int> tempfilteredHulls;
 	float distance;
@@ -2634,6 +2640,7 @@ vector<int> elimNeighborHulls(vector<int> inputIndex, vector<Point> inputPoints)
 	}
 	return tempfilteredHulls;
 }
+
 vector<int> filterHulls(vector<int> inputIndex, vector<Point> inputPoints, RotatedRect rect) {
 	vector<int> tempFilteredHulls;
 	float distThres = 20;
