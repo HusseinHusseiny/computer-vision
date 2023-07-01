@@ -90,6 +90,15 @@ int ag = 0;
 
 int main() {
 	int ans, model;
+	string imagePath;
+
+	cout << "Enter the image path" << endl;
+	cin >> imagePath;
+	Mat imagep = cv::imread(imagePath, cv::IMREAD_UNCHANGED);
+	if (imagep.empty()) {
+		cout << "Failed to open the image." << std::endl;
+		return -1;
+	}
 	cout << "Choose which model you want " << endl << endl;
 	cout << " '1' For HSV " << endl;
 	cout << " '2' For YCRCB " << endl;
@@ -100,6 +109,8 @@ int main() {
 	cout << "if yes press '1'" << endl;
 	cout << "if no press '0'" << endl;
 	cin >> ans;
+	
+
 	// Init background substractor
 	Ptr<BackgroundSubtractor> bg_model = createBackgroundSubtractorMOG2(500, 16.0, true);
 	// Create empy input img, foreground and background image and foreground mask.
@@ -107,7 +118,7 @@ int main() {
 
 
 	Mat image;
-
+	Mat flipFrame;
 	Mat  skin, hsv, mask, ycrcb, mask2, rgb, mask3;
 	char a[40];
 	int count = 0;
@@ -130,25 +141,26 @@ int main() {
 	while (true) {
 
 		cap >> image;
+		flip(image, flipFrame, 1);
 
-		cv::Mat new_image = cv::Mat::zeros(image.size(), image.type());
+		cv::Mat new_image = cv::Mat::zeros(flipFrame.size(), flipFrame.type());
 		double alpha = 2.2; /*< Simple contrast control */
 		int beta = 0;       /*< Simple brightness control */
 
-		for (int y = 0; y < image.rows; y++) {
-			for (int x = 0; x < image.cols; x++) {
-				for (int c = 0; c < image.channels(); c++) {
+		for (int y = 0; y < flipFrame.rows; y++) {
+			for (int x = 0; x < flipFrame.cols; x++) {
+				for (int c = 0; c < flipFrame.channels(); c++) {
 					new_image.at<cv::Vec3b>(y, x)[c] =
-						cv::saturate_cast<uchar>(alpha * image.at<cv::Vec3b>(y, x)[c] + beta);
+						cv::saturate_cast<uchar>(alpha * flipFrame.at<cv::Vec3b>(y, x)[c] + beta);
 				}
 			}
 		}
 		if (foregroundMask.empty()) {
-			foregroundMask.create(image.size(), image.type());
+			foregroundMask.create(flipFrame.size(), flipFrame.type());
 		}
 		// compute foreground mask 8 bit image
 		 // -1 is parameter that chose automatically your learning rate
-		bg_model->apply(image, foregroundMask, true ? -1 : 0);
+		bg_model->apply(flipFrame, foregroundMask, true ? -1 : 0);
 		// smooth the mask to reduce noise in image
 		GaussianBlur(foregroundMask, foregroundMask, Size(11, 11), 3.5, 3.5);
 		// threshold mask to saturate at black and white values
@@ -156,7 +168,7 @@ int main() {
 		// create black foreground image
 		foregroundImg = Scalar::all(0);
 		// Copy source image to foreground image only in area with white mask
-		image.copyTo(foregroundImg, foregroundMask);
+		flipFrame.copyTo(foregroundImg, foregroundMask);
 		//Get background image
 		bg_model->getBackgroundImage(backgroundImage);
 		// Show the results
@@ -168,7 +180,7 @@ int main() {
 		if (model == 1 && ans == 0)
 		{
 
-			cvtColor(image, hsv, COLOR_BGR2HSV);
+			cvtColor(flipFrame, hsv, COLOR_BGR2HSV);
 
 
 			Mat hsv_channels[3];
@@ -608,11 +620,11 @@ int main() {
 				Point center6 = Point(bounding_rect6.x, bounding_rect6.y);
 
 				Mat rotated_img;
-				Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\earth.jpeg");
+				//Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\earth.jpeg");
 
 				resizeWindow("2D image", 200, 200);
 				//resize(imgg, dst, Size(), 3, 3, cv::INTER_LANCZOS4);
-				imshow("2D image", imgg);
+				imshow("2D image", imagep);
 
 				//two hands gestures
 				if ((p == 1) && (s != 0))
@@ -641,7 +653,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 						;
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 						putText(dss, "Gesture: Zoom In", Point(400, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, 8, false);
 					}
@@ -660,7 +672,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 
 
@@ -714,7 +726,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Interact with image", 400, 400);
 						imshow("Rotated Image", rotated_img);
@@ -729,7 +741,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Interact with image", 200, 200);
 						imshow("Rotated Image", rotated_img);
@@ -1191,10 +1203,10 @@ int main() {
 				Point center6 = Point(bounding_rect6.x, bounding_rect6.y);
 
 				Mat rotated_img;
-				Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\R.png");
+				//Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\R.png");
 
 				resizeWindow("2D image", 200, 200);
-				imshow("2D image", imgg);
+				imshow("2D image", imagep);
 
 				//two hands gestures
 				if ((p == 1) && (s != 0))
@@ -1223,7 +1235,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 						;
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 						putText(dss, "Gesture: Zoom In", Point(400, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, 8, false);
 					}
@@ -1242,7 +1254,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 
 
@@ -1296,7 +1308,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Rotated Image", 80, 80);
 						//resizeWindow("Interact with image", 200,200);
@@ -1313,7 +1325,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Interact with image", 200, 200);
 						imshow("Rotated Image", rotated_img);
@@ -1337,7 +1349,8 @@ int main() {
 		}
 		else if (model == 2 && ans == 0) {
 
-			cvtColor(image, ycrcb, COLOR_BGR2YCrCb);
+			cvtColor(flipFrame, ycrcb, COLOR_BGR2YCrCb);
+
 
 			inRange(ycrcb, Scalar(0, 133, 77), Scalar(255, 173, 127), mask2);
 
@@ -1771,10 +1784,11 @@ int main() {
 				Point center6 = Point(bounding_rect6.x, bounding_rect6.y);
 
 				Mat rotated_img;
-				Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\bird.png");
+				//Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\bird.png");
+			
 
 				resizeWindow("2D image", 200, 200);
-				imshow("2D image", imgg);
+				imshow("2D image", imagep);
 
 				//two hands gestures
 				if ((p == 1) && (s != 0))
@@ -1803,7 +1817,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 						;
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 						putText(dss, "Gesture: Zoom In", Point(400, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, 8, false);
 					}
@@ -1822,7 +1836,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 
 
@@ -1876,7 +1890,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Interact with image", 200, 200);
 						imshow("Rotated Image", rotated_img);
@@ -1891,7 +1905,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Interact with image", 200, 200);
 						imshow("Rotated Image", rotated_img);
@@ -2349,10 +2363,10 @@ int main() {
 				Point center6 = Point(bounding_rect6.x, bounding_rect6.y);
 
 				Mat rotated_img;
-				Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\flower.jpeg");
+				//Mat imgg = imread("C:\\Users\\houss\\OneDrive\\Desktop\\flower.jpeg");
 
 				resizeWindow("2D image", 200, 200);
-				imshow("2D image", imgg);
+				imshow("2D image", imagep);
 
 				//two hands gestures
 				if ((p == 1) && (s != 0))
@@ -2381,7 +2395,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 						;
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 						putText(dss, "Gesture: Zoom In", Point(400, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, 8, false);
 					}
@@ -2400,7 +2414,7 @@ int main() {
 						// we will save the resulting image in rotated_image matrix
 
 						// rotate the image using warpAffine
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 						imshow("Zoom", rotated_img);
 
 
@@ -2454,7 +2468,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Interact with image", 200, 200);
 						imshow("Rotated Image", rotated_img);
@@ -2469,7 +2483,7 @@ int main() {
 						Point2f center((x - 1) / 2.0, (y - 1) / 2.0);
 						// using getRotationMatrix2D() to get the rotation matrix
 						Mat rotation_matix = getRotationMatrix2D(center, angle, (zoom) / 25.0);
-						warpAffine(imgg, rotated_img, rotation_matix, imgg.size());
+						warpAffine(imagep, rotated_img, rotation_matix, imagep.size());
 
 						//resizeWindow("Interact with image", 200, 200);
 						imshow("Rotated Image", rotated_img);
